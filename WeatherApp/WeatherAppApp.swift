@@ -11,7 +11,27 @@ import SwiftUI
 struct WeatherAppApp: App {
     var body: some Scene {
         WindowGroup {
-            HomeView()
+            
+            NavigationStack {
+                ZStack {
+                    Color.blue.opacity(0.5)
+                        .ignoresSafeArea(edges: .all)
+                    VStack {
+                        NavigationLink("Check My Location Weather", destination: CurrentLocationView())
+                            .padding()
+                            .frame(width: 300, height: 50)
+                            .foregroundColor(Color.white)
+                            .background(Color.blue)
+                            .cornerRadius(10)
+                        NavigationLink("Enter a City", destination: HomeView())
+                            .padding()
+                            .frame(width: 300, height: 50)
+                            .foregroundColor(Color.white)
+                            .background(Color.blue)
+                            .cornerRadius(10)
+                    }
+                }
+            }
         }
     }
 }

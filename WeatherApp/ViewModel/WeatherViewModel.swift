@@ -15,6 +15,7 @@ class WeatherViewModel: ObservableObject {
     @Published var forecast: [ForecastDay] = []
     
     private var cancellables = Set<AnyCancellable>()
+    private let locationManager = LocationManager()
     
     func getWeather(for city: String) {
         WeatherService.shared.fetchWeather(for: city)
@@ -34,6 +35,33 @@ class WeatherViewModel: ObservableObject {
                 self?.weatherDescription = weather.current.condition.text
                 self?.iconUrl = "https:\(weather.current.condition.icon)"
                 self?.forecast = weather.forecast.forecastday
+            })
+            .store(in: &cancellables)
+    }
+    func getWeatherForCurrentLocation() {
+        let lat = locationManager.latitude
+        let lon = locationManager.longitude
+        
+        if lat == 0.0 || lon == 0.0 {
+            print("konum güncellenmedi,API çağrısı yapılmadı.")
+            return
+        }
+        
+        
+        
+        WeatherService.shared.fetchWeatherByCoordinates(lat: lat, lon: lon)
+            .sink(receiveCompletion: { completion in
+                switch completion {
+                    case .failure(let error):
+                    print("API hatası: \(error.localizedDescription)")
+                    
+                case .finished:
+                    break
+                }
+            }, receiveValue: { [weak self] weather in
+                self?.temperature = String(format:"%.1f", weather.current.temp_c)
+                self?.weatherDescription = weather.current.condition.text
+                self?.iconUrl = "https:\(weather.current.condition.icon)"
             })
             .store(in: &cancellables)
     }
