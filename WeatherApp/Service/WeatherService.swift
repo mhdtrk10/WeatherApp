@@ -30,9 +30,12 @@ class WeatherService {
             return Fail(error: URLError(.badURL)).eraseToAnyPublisher()
         }
         return URLSession.shared.dataTaskPublisher(for: url)
+            /*
             .tryMap { result in
                 return result.data
             }
+             */
+            .map{ $0.data }
             .decode(type: weatherModel.self, decoder: JSONDecoder())
             .receive(on: DispatchQueue.main)
             .eraseToAnyPublisher()
