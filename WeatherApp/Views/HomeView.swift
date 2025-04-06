@@ -6,14 +6,15 @@
 //
 
 import SwiftUI
+import CoreLocation
 
 struct HomeView: View {
     @State private var city: String = ""
     @StateObject private var viewModel = WeatherViewModel()
     
     var backgroundColor: Color {
-        switch viewModel.weatherDescription.lowercased() {
-        case let desc where desc.contains("sunny"):
+        switch viewModel.descriptionText.lowercased() {
+        case let desc where desc.contains("sun"):
             return Color.yellow.opacity(0.7)
         case let desc where desc.contains("cloud"):
             return Color.gray.opacity(0.5)
@@ -33,24 +34,23 @@ struct HomeView: View {
                 .edgesIgnoringSafeArea(.all)
                 .animation(.easeInOut(duration: 0.5))
                 
-            
-            
+            HomeContent(city: $city, viewModel: viewModel)
+            /*
             VStack {
-                Image(systemName: "cloud.rain.fill")
-                    .font(.system(size: 100))
-                    
+                
                 VStack {
-                    TextField("Şehrin adını girin..", text: $city)
+                    TextField("enter the name of the city..", text: $city)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                         .padding()
                         .background(Color.white.opacity(0.3))
                         .cornerRadius(10)
                         .shadow(radius: 5)
                     Button (action: {
-                        viewModel.getWeather(for: city)
+                        geocodeCityName(city)
                     }) {
-                        Text("Tıklayınız")
+                        Text("Search")
                             .font(.headline)
+                            .frame(width: 150, height: 20)
                             .foregroundColor(.white)
                             .padding()
                             .background(Color.blue)
@@ -59,42 +59,30 @@ struct HomeView: View {
                     }
                     
                     
-                    Text(viewModel.temperature + "°C")
-                        .font(.system(size: 64, weight: .bold))
-                        .padding()
-                        .scaleEffect(viewModel.temperature == "--" ? 1.0 : 1.2)
-                        .animation(.spring(response: 0.5, dampingFraction: 0.5, blendDuration: 0.5))
-                    
-                    Text(viewModel.weatherDescription)
-                        .font(.title2)
-                        .padding()
-                        .opacity(viewModel.weatherDescription == "loading..." ? 0.5: 1.0)
-                        .animation(.easeInOut(duration: 0.5))
-                    
-                    if let url = URL(string: viewModel.iconUrl) {
-                        AsyncImage(url: url) { image in
-                            image.resizable()
-                                .scaledToFit()
-                                .frame(width: 100, height: 100)
-                        } placeholder: {
-                            ProgressView()
-                        }
+                    if viewModel.currentTemp != "--" {
+                        Text("\(viewModel.currentTemp)°C")
+                            .font(.system(size: 64, weight: .bold))
+                            .padding(.top)
+                            
+                        
+                        Text(viewModel.descriptionText)
+                            .font(.title2)
+                            .padding()
+                            
                     }
+                    
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack {
-                            ForEach(viewModel.forecast, id: \.date) { day in
-                                VStack {
-                                    Text(day.date)
+                            ForEach(viewModel.forecast) { day in
+                                VStack(width: 100, height: 200) {
+                                    Text(formatDate(day.date))
                                         .font(.caption)
-                                    AsyncImage(url: URL(string: "https:\(day.day.condition.icon)")) { image in
-                                        image.resizable()
-                                            .scaledToFit()
-                                            .frame(width: 50, height: 50)
-                                    } placeholder: {
-                                        ProgressView()
-                                    }
-                                    Text("\(day.day.avgtemp_c, specifier: "%.1f")°C")
-                                        .font(.headline)
+                                    Text("\(day.maxTemp, specifier: "%.1f")°C / \(day.minTemp, specifier: "%.1f")")
+                                    Image(systemName: weatherIcon(for: day.code))
+                                        .resizable()
+                                        .scaledToFit()
+                                        .frame(width: 40, height: 40)
+                                    
                                 }
                                 .padding()
                                 .background(Color.white.opacity(0.2))
@@ -102,11 +90,58 @@ struct HomeView: View {
                                 .shadow(radius: 5)
                             }
                         }
-                        .padding()
+                        .padding(.horizontal)
                     }
+                    Spacer()
                 }
                 .padding()
             }
+            */
+        }
+    }
+    func geocodeCityName(_ city: String) {
+       let geocoder = CLGeocoder()
+        geocoder.geocodeAddressString(city) { placemarks, error in
+            if let coordiante = placemarks?.first?.location?.coordinate {
+                viewModel.fetchWeather(for: coordiante.latitude, longitude: coordiante.longitude)
+            } else {
+                print("Geocoding hatası: \(error?.localizedDescription ?? "Unknown Error")")
+            }
+        }
+    }
+    func formatDate(_ dateString: String) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        if let date = formatter.date(from: dateString) {
+            formatter.dateStyle = .short
+            return formatter.string(from: date)
+        }
+        return dateString
+    }
+    func weatherIcon(for code: Int) -> String {
+        switch code {
+        case 0: return "sun.max.fill"
+        case 1,2: return "cloud.sun.fill"
+        case 3: return "cloud.fill"
+        case 45,48: return "cloud.fog.fill"
+        case 51,53,55: return "cloud.drizzle.fill"
+        case 61,63,65: return "cloud.rain.fill"
+        case 71,73,75: return "snow"
+        case 80,81,82: return "cloud.heavyrain.fill"
+        default: return "questionmark"
+        }
+    }
+    func weatherDescription(for code: Int) -> String {
+        switch code {
+        case 0: return "Sunny"
+        case 1,2 : return "Partly Cloudy"
+        case 3: return "Cloudy"
+        case 45,48 : return "Foggy"
+        case 51,52,55: return "Drizzly"
+        case 61,63,65: return "Rainy"
+        case 71,73,75: return "Snowy"
+        case 80,81,82: return "DownPour"
+        default: return "Unknown"
         }
     }
 }

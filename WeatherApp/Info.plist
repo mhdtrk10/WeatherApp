@@ -3,24 +3,24 @@
 <plist version="1.0">
 <dict>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>Bu uygulama, hava durumunu almak için konumunuza ihtiyaç duyuyor.</string>
+	<string>This app needs your location to get the weather forecast.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Bu uygulama, hava durumunu almak için konumunuza ihtiyaç duyuyor.</string>
+	<string>This app needs your location to get the weather forecast.</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict/>
 	</array>
-    <key>CFBundleIcons</key>
-    <dict>
-        <key>CFBundlePrimaryIcon</key>
-        <dict>
-            <key>CFBundleIconFiles</key>
-            <array>
-                <string>AppIcon</string>
-            </array>
-            <key>CFBundleIconName</key>
-            <string>AppIcon</string>
-        </dict>
-    </dict>
+	<key>CFBundleIcons</key>
+	<dict>
+		<key>CFBundlePrimaryIcon</key>
+		<dict>
+			<key>CFBundleIconFiles</key>
+			<array>
+				<string>AppIcon</string>
+			</array>
+			<key>CFBundleIconName</key>
+			<string>AppIcon</string>
+		</dict>
+	</dict>
 </dict>
 </plist>

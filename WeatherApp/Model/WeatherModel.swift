@@ -2,38 +2,23 @@
 import Foundation
 
 
-struct weatherModel: Codable {
-    let location: Location
-    let current: Current
-    let forecast: Forecast
+//Open-Meteo API'den dönen ana JSON yanıt yapısı
+struct WeatherResponse: Codable {
+    let daily: DailyForecast
+}
+//Günlük tahmin değerlerini içeren yapı
+struct DailyForecast: Codable {
+    let time: [String]
+    let temperature_2m_max: [Double]
+    let temperature_2m_min: [Double]
+    let weathercode: [Int]
 }
 
-struct Location: Codable {
-    let name: String
-    let country: String
-}
-
-struct Current: Codable {
-    let temp_c: Double
-    let condition: Condition
-}
-
-struct Condition: Codable {
-    let text: String
-    let icon: String
-}
-
-struct Forecast: Codable {
-    let forecastday: [ForecastDay]
-}
-
-struct ForecastDay: Codable {
+//UI'da kullanılmak üzere sadeleştirilmiş model
+struct ForecastDay: Identifiable {
+    let id = UUID()
     let date: String
-    let day: Day
-   
-}
-
-struct Day: Codable {
-    let avgtemp_c: Double
-    let condition: Condition
+    let maxTemp: Double
+    let minTemp: Double
+    let code: Int
 }

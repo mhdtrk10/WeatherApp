@@ -9,84 +9,95 @@ import Foundation
 import Combine
 
 class WeatherViewModel: ObservableObject {
-    @Published var temperature: String = "--"
-    @Published var weatherDescription: String = "loading..."
-    @Published var iconUrl: String = ""
+   
+    //Anlık veriler (güncel sıcaklık gösterimi için)
+    @Published var locationName: String = "Current Location"
+    @Published var currentTemp: String = "--"
+    @Published var descriptionText: String = ""
+    @Published var weatherCode: Int = 0
+    
+    // 7 günlük tahmin
     @Published var forecast: [ForecastDay] = []
     
+    // hata mesajı
+    @Published var errorMessage: String? = nil
+    
+    
+    // Combine için iptal edilebilir referans
     private var cancellables = Set<AnyCancellable>()
+    
+    // Konum yöneticisi
     private let locationManager = LocationManager()
     
-    func getWeather(for city: String) {
-        WeatherService.shared.fetchWeather(for: city)
-            .sink(receiveCompletion: { completion in
-                switch completion {
-                case .failure(let error):
-                    print("API hatası: \(error.localizedDescription)")
-                    self.temperature = "--"
-                    self.weatherDescription = "Unknown"
-                    self.iconUrl = ""
-                    self.forecast = []
-                case .finished:
-                    break
-                }
-            }, receiveValue: { [weak self] weather in
-                self?.temperature = String(format: "%.1f", weather.current.temp_c)
-                self?.weatherDescription = weather.current.condition.text
-                self?.iconUrl = "https:\(weather.current.condition.icon)"
-                self?.forecast = weather.forecast.forecastday
-            })
-            .store(in: &cancellables)
+    var currentLocationName: String {
+        locationManager.cityName
     }
-    func getWeatherForCurrentLocation() {
+    
+    // Kullanıcının anlık konumuna göre hava durumu getirme
+    func fetchWeatherForCurrentLocation() {
         let lat = locationManager.latitude
         let lon = locationManager.longitude
         
-        if lat == 0.0 || lon == 0.0 {
-            print("konum güncellenmedi,API çağrısı yapılmadı.")
+        guard lat != 0.0 && lon != 0.0 else {
+            errorMessage = "Konum alınamadı."
             return
         }
-        
-        
-        
-        WeatherService.shared.fetchWeatherByCoordinates(lat: lat, lon: lon)
+        WeatherService.shared.fetchWeather(latitude: lat, longitude: lon)
             .sink(receiveCompletion: { completion in
                 switch completion {
-                    case .failure(let error):
-                    print("API hatası: \(error.localizedDescription)")
+                case .failure(let error):
+                    self.errorMessage = "API hatası: \(error.localizedDescription)"
+                case .finished:
+                    break
+                }
+            }, receiveValue: { [weak self] forecast in
+                guard let self = self else { return }
+                self.forecast = forecast
+                if let today = forecast.first {
+                    self.currentTemp = String(format: "%.1f", today.maxTemp)
+                    self.weatherCode = today.code
+                    self.descriptionText = self.getDescription(from: today.code)
+                }
+            })
+            .store(in: &cancellables)
+    }
+    
+    func fetchWeather(for latitude: Double, longitude: Double) {
+        WeatherService.shared.fetchWeather(latitude: latitude, longitude: longitude)
+            .sink(receiveCompletion: { completion in
+                switch completion {
+                case .failure(let error):
+                    self.errorMessage = "API hatası: \(error.localizedDescription)"
+                case .finished:
+                    break
+                }
+            }, receiveValue: { [weak self] forecast in
+                guard let self = self else { return }
+                self.forecast = forecast
+                if let today = forecast.first {
+                    self.currentTemp = String(format: "%.1f", today.maxTemp)
+                    self.weatherCode = today.code
+                    self.descriptionText = self.getDescription(from: today.code)
                     
-                case .finished:
-                    break
                 }
-            }, receiveValue: { [weak self] weather in
-                self?.temperature = String(format:"%.1f", weather.current.temp_c)
-                self?.weatherDescription = weather.current.condition.text
-                self?.iconUrl = "https:\(weather.current.condition.icon)"
-                
             })
             .store(in: &cancellables)
     }
-    func getWeatherForecatForCurrentLocation() {
-        let lat = locationManager.latitude
-        let lon = locationManager.longitude
-        
-        if lat == 0.0 || lon == 0.0 {
-            print("konum güncellenmedi,API çağrısı yapılmadı.")
-            return
+    
+    // Weather açıklaması
+    private func getDescription(from code: Int) -> String {
+        switch code {
+        case 0: return "Sunny"
+        case 1,2 : return "Partly Cloudy"
+        case 3: return "Cloudy"
+        case 45,48 : return "Foggy"
+        case 51,52,55: return "Drizzly"
+        case 61,63,65: return "Rainy"
+        case 71,73,75: return "Snowy"
+        case 80,81,82: return "DownPour"
+        default: return "Unknown"
         }
-        
-        WeatherService.shared.fetchWeatherByCoordinates(lat: lat, lon: lon)
-            .sink(receiveCompletion: { completion in
-                switch completion {
-                case .failure(let error):
-                    print("API hatası: \(error.localizedDescription)")
-                case .finished:
-                    break
-                }
-            }, receiveValue: { [weak self] weather in
-                self?.forecast = weather.forecast.forecastday
-            })
-            .store(in: &cancellables)
     }
+    
     
 }

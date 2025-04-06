@@ -11,10 +11,12 @@ import CoreLocation
 class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
     
     private let manager = CLLocationManager()
+    private let geocoder = CLGeocoder()
     
     @Published var latitude: Double = 0.0
     @Published var longitude: Double = 0.0
     @Published var locationStatus: CLAuthorizationStatus?
+    @Published var cityName: String = "Current Locaiton"
     
     
     override init() {
@@ -31,6 +33,7 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
         DispatchQueue.main.async {
             self.latitude = location.coordinate.latitude
             self.longitude = location.coordinate.longitude
+            self.reverseGeocode(location: location)
         }
     }
     func locationManager(_ manager: CLLocationManager, didChangeAuthorization status: CLAuthorizationStatus) {
@@ -40,6 +43,17 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
                 self.manager.startUpdatingLocation()
             } else {
                 print("konum erişimi reddedildi veya kısıtlandı.")
+            }
+        }
+    }
+    private func reverseGeocode(location: CLLocation) {
+        geocoder.reverseGeocodeLocation(location) { placemarks, error in
+            if let placemark = placemarks?.first {
+                let city = placemark.locality ?? placemark.name ?? "Unknown"
+                let country = placemark.country ?? "bilinmiyor"
+                DispatchQueue.main.async {
+                    self.cityName = "\(city), \(country)"
+                }
             }
         }
     }
